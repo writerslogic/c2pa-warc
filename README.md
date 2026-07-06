@@ -44,15 +44,17 @@ let manifest = read_manifest(&warc_data).unwrap();
 
 ### Multiple manifests
 
-When a WARC file contains multiple C2PA manifest records (e.g., after concatenation), the last record is used as the active manifest. Pre-existing manifest records are preserved, and their hashes become valid again if the file is split back into its original constituents.
+Manifest updates are append-only: a new manifest record is appended rather than rewriting the file, and the last manifest record in the file is the active one. When WARC files are concatenated, the combining tool appends a fresh manifest covering all records in the combined file and removes the constituent manifest records, which may be referenced as ingredients.
 
 ## Design
 
-- Manifest stored as a WARC `resource` record
-- Content hashing via collection data hash over entire WARC records (headers + body)
-- Supports per-record gzip compression (hashes compressed bytes)
-- Append-only; no two-pass workflow required
-- Multiple manifests allowed; last record is active
+- Manifest stored as a WARC `resource` record with `WARC-Target-URI: urn:c2pa:manifest`, appended at the end of the file
+- Append-only; updates append a new manifest record, and the last manifest record is active
+- Manifest records are identified by `Content-Type: application/c2pa`
+
+## Scope
+
+This crate implements embedding and extraction only. Content binding — the C2PA collection data hash over each record's stored bytes (the gzip member when per-record compression is used) — is out of scope; use the [official C2PA SDK](https://crates.io/crates/c2pa) to build and sign manifests.
 
 ## Related Crates
 

@@ -27,8 +27,7 @@ impl WarcRecord {
     }
 
     pub fn is_c2pa_manifest(&self) -> bool {
-        self.warc_type() == Some("resource")
-            && self.content_type() == Some(C2PA_CONTENT_TYPE)
+        self.warc_type() == Some("resource") && self.content_type() == Some(C2PA_CONTENT_TYPE)
     }
 }
 
@@ -92,10 +91,16 @@ pub fn parse_records(data: &[u8]) -> Result<Vec<WarcRecord>, Error> {
     Ok(records)
 }
 
-pub fn build_record(warc_type: &str, content_type: &str, record_id: &str, body: &[u8]) -> Vec<u8> {
-    let date = "2026-01-01T00:00:00Z";
+pub fn build_record(
+    warc_type: &str,
+    content_type: &str,
+    record_id: &str,
+    target_uri: &str,
+    body: &[u8],
+) -> Vec<u8> {
+    let date = warc_date_now();
     let header = format!(
-        "{VERSION}\r\nWARC-Type: {warc_type}\r\nWARC-Record-ID: <{record_id}>\r\nWARC-Target-URI: {record_id}\r\nWARC-Date: {date}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\n\r\n",
+        "{VERSION}\r\nWARC-Type: {warc_type}\r\nWARC-Record-ID: <{record_id}>\r\nWARC-Target-URI: {target_uri}\r\nWARC-Date: {date}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\n\r\n",
         body.len()
     );
     let mut out = header.into_bytes();
@@ -104,22 +109,43 @@ pub fn build_record(warc_type: &str, content_type: &str, record_id: &str, body: 
     out
 }
 
+fn warc_date_now() -> String {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    format_warc_date(secs)
+}
+
+// civil-from-days conversion; valid for all dates in the Unix era
+fn format_warc_date(secs: u64) -> String {
+    let days = (secs / 86_400) as i64;
+    let rem = secs % 86_400;
+    let (h, m, s) = (rem / 3_600, (rem % 3_600) / 60, rem % 60);
+    let z = days + 719_468;
+    let era = z / 146_097;
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = yoe + era * 400 + i64::from(month <= 2);
+    format!("{y:04}-{month:02}-{d:02}T{h:02}:{m:02}:{s:02}Z")
+}
+
 fn find_double_crlf(data: &[u8]) -> Option<usize> {
-    data.windows(4)
-        .position(|w| w == b"\r\n\r\n")
+    data.windows(4).position(|w| w == b"\r\n\r\n")
 }
 
 fn parse_headers(block: &[u8]) -> Result<HashMap<String, String>, Error> {
-    let text = std::str::from_utf8(block)
-        .map_err(|_| Error::InvalidRecord("non-UTF-8 header".into()))?;
+    let text =
+        std::str::from_utf8(block).map_err(|_| Error::InvalidRecord("non-UTF-8 header".into()))?;
     let mut headers = HashMap::new();
 
     for line in text.lines().skip(1) {
         if let Some((key, value)) = line.split_once(':') {
-            headers.insert(
-                key.trim().to_ascii_lowercase(),
-                value.trim().to_string(),
-            );
+            headers.insert(key.trim().to_ascii_lowercase(), value.trim().to_string());
         }
     }
 
@@ -142,7 +168,13 @@ mod tests {
     #[test]
     fn parse_c2pa_record() {
         let manifest = b"\x00\x01\x02\x03";
-        let record = build_record("resource", "application/c2pa", "urn:uuid:test-id", manifest);
+        let record = build_record(
+            "resource",
+            "application/c2pa",
+            "urn:uuid:test-id",
+            "urn:c2pa:manifest",
+            manifest,
+        );
         let records = parse_records(&record).unwrap();
         assert_eq!(records.len(), 1);
         assert!(records[0].is_c2pa_manifest());
@@ -150,9 +182,21 @@ mod tests {
     }
 
     #[test]
+    fn format_warc_date_known_timestamp() {
+        assert_eq!(format_warc_date(0), "1970-01-01T00:00:00Z");
+        assert_eq!(format_warc_date(1_700_000_000), "2023-11-14T22:13:20Z");
+    }
+
+    #[test]
     fn build_and_parse_roundtrip() {
         let body = b"test body content";
-        let record = build_record("resource", "text/plain", "urn:uuid:123", body);
+        let record = build_record(
+            "resource",
+            "text/plain",
+            "urn:uuid:123",
+            "https://example.com/",
+            body,
+        );
         let records = parse_records(&record).unwrap();
         assert_eq!(records[0].body, body);
     }

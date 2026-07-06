@@ -1,6 +1,6 @@
 [package]
 name = "c2pa-warc"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "C2PA manifest embedding for WARC web archive files (ISO 28500)"
 license = "MIT OR Apache-2.0"

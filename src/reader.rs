@@ -22,9 +22,21 @@ mod tests {
 
     #[test]
     fn read_manifest_from_warc() {
-        let r1 = build_record("response", "text/html", "urn:uuid:aaa", b"<html></html>");
+        let r1 = build_record(
+            "response",
+            "text/html",
+            "urn:uuid:aaa",
+            "https://example.com/",
+            b"<html></html>",
+        );
         let manifest_bytes = b"\x00\x01\x02\x03";
-        let r2 = build_record("resource", "application/c2pa", "urn:uuid:bbb", manifest_bytes);
+        let r2 = build_record(
+            "resource",
+            "application/c2pa",
+            "urn:uuid:bbb",
+            "urn:c2pa:manifest",
+            manifest_bytes,
+        );
         let mut warc = Vec::new();
         warc.extend_from_slice(&r1);
         warc.extend_from_slice(&r2);
@@ -35,9 +47,27 @@ mod tests {
 
     #[test]
     fn uses_last_manifest() {
-        let r1 = build_record("resource", "application/c2pa", "urn:uuid:old", b"old");
-        let r2 = build_record("response", "text/html", "urn:uuid:mid", b"<html></html>");
-        let r3 = build_record("resource", "application/c2pa", "urn:uuid:new", b"new");
+        let r1 = build_record(
+            "resource",
+            "application/c2pa",
+            "urn:uuid:old",
+            "urn:c2pa:manifest",
+            b"old",
+        );
+        let r2 = build_record(
+            "response",
+            "text/html",
+            "urn:uuid:mid",
+            "https://example.com/",
+            b"<html></html>",
+        );
+        let r3 = build_record(
+            "resource",
+            "application/c2pa",
+            "urn:uuid:new",
+            "urn:c2pa:manifest",
+            b"new",
+        );
         let mut warc = Vec::new();
         warc.extend_from_slice(&r1);
         warc.extend_from_slice(&r2);
@@ -49,7 +79,13 @@ mod tests {
 
     #[test]
     fn no_manifest() {
-        let r1 = build_record("response", "text/html", "urn:uuid:aaa", b"<html></html>");
+        let r1 = build_record(
+            "response",
+            "text/html",
+            "urn:uuid:aaa",
+            "https://example.com/",
+            b"<html></html>",
+        );
         assert!(matches!(read_manifest(&r1), Err(Error::NotFound)));
     }
 }
