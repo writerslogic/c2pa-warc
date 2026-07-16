@@ -11,7 +11,7 @@
 
 ## Overview
 
-Stores and retrieves C2PA Manifest Stores in [WARC 1.1](https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.1/) files (ISO 28500). The manifest is stored as a WARC `resource` record with `Content-Type: application/c2pa`, appended at the end of the file.
+Stores and retrieves C2PA Manifest Stores in [WARC 1.1](https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.1/) files (ISO 28500). The manifest is stored as a WARC record of a dedicated `c2paprovenance` type with `Content-Type: application/c2pa`, as the last record in the file.
 
 WARC is used by national libraries, legal deposit systems, and digital preservation institutions to archive web content. This crate enables content provenance for archived web resources.
 
@@ -44,17 +44,17 @@ let manifest = read_manifest(&warc_data).unwrap();
 
 ### Multiple manifests
 
-Manifest updates are append-only: a new manifest record is appended rather than rewriting the file, and the last manifest record in the file is the active one. When WARC files are concatenated, the combining tool appends a fresh manifest covering all records in the combined file and removes the constituent manifest records, which may be referenced as ingredients.
+A WARC file carries at most one manifest record, always last. An update removes the existing manifest record and appends the replacement, which leaves the bytes of every other record unchanged. When WARC files are concatenated, the combining tool appends a fresh manifest covering all records in the combined file and removes the constituent manifest records, which may be referenced as ingredients.
 
 ## Design
 
-- Manifest stored as a WARC `resource` record with `WARC-Target-URI: urn:c2pa:manifest`, appended at the end of the file
-- Append-only; updates append a new manifest record, and the last manifest record is active
-- Manifest records are identified by `Content-Type: application/c2pa`
+- Manifest stored as a WARC record of a dedicated `c2paprovenance` type, as the last record in the file; it carries no `WARC-Target-URI`
+- At most one manifest record; an update removes the existing one and appends the replacement
+- Manifest records are identified by `WARC-Type: c2paprovenance` together with `Content-Type: application/c2pa`
 
 ## Scope
 
-This crate implements embedding and extraction only. Content binding — the C2PA collection data hash over each record's stored bytes (the gzip member when per-record compression is used) — is out of scope; use the [official C2PA SDK](https://crates.io/crates/c2pa) to build and sign manifests.
+This crate implements embedding and extraction only. Content binding — the C2PA collection data hash, computed over each record's uncompressed bytes — is out of scope; use the [official C2PA SDK](https://crates.io/crates/c2pa) to build and sign manifests.
 
 ## Related Crates
 

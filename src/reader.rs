@@ -26,15 +26,15 @@ mod tests {
             "response",
             "text/html",
             "urn:uuid:aaa",
-            "https://example.com/",
+            Some("https://example.com/"),
             b"<html></html>",
         );
         let manifest_bytes = b"\x00\x01\x02\x03";
         let r2 = build_record(
-            "resource",
+            "c2paprovenance",
             "application/c2pa",
             "urn:uuid:bbb",
-            "urn:c2pa:manifest",
+            None,
             manifest_bytes,
         );
         let mut warc = Vec::new();
@@ -48,24 +48,24 @@ mod tests {
     #[test]
     fn uses_last_manifest() {
         let r1 = build_record(
-            "resource",
+            "c2paprovenance",
             "application/c2pa",
             "urn:uuid:old",
-            "urn:c2pa:manifest",
+            None,
             b"old",
         );
         let r2 = build_record(
             "response",
             "text/html",
             "urn:uuid:mid",
-            "https://example.com/",
+            Some("https://example.com/"),
             b"<html></html>",
         );
         let r3 = build_record(
-            "resource",
+            "c2paprovenance",
             "application/c2pa",
             "urn:uuid:new",
-            "urn:c2pa:manifest",
+            None,
             b"new",
         );
         let mut warc = Vec::new();
@@ -83,7 +83,7 @@ mod tests {
             "response",
             "text/html",
             "urn:uuid:aaa",
-            "https://example.com/",
+            Some("https://example.com/"),
             b"<html></html>",
         );
         assert!(matches!(read_manifest(&r1), Err(Error::NotFound)));
