@@ -75,6 +75,10 @@ This crate implements embedding and extraction only. Content binding — the C2P
 | [c2pa-text-binding](https://crates.io/crates/c2pa-text-binding) | Soft binding and content fingerprinting for text assets |
 | [c2pa-rs](https://crates.io/crates/c2pa) | Official C2PA SDK |
 
+## Security
+
+Found a vulnerability? Please report it privately — see [SECURITY.md](./SECURITY.md).
+
 ## License
 
 Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT License](LICENSE-MIT) at your option.
