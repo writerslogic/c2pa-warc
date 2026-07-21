@@ -1,11 +1,8 @@
 <p align="center">
-  <h1 align="center">c2pa-warc</h1>
-  <p align="center">C2PA manifest embedding for WARC web archive files (ISO 28500)</p>
-</p>
-
-<p align="center">
   <a href="https://crates.io/crates/c2pa-warc"><img src="https://img.shields.io/crates/v/c2pa-warc.svg" alt="crates.io"></a>
   <a href="https://docs.rs/c2pa-warc"><img src="https://docs.rs/c2pa-warc/badge.svg" alt="docs.rs"></a>
+  <a href="https://github.com/writerslogic/c2pa-warc/actions/workflows/ci.yml"><img src="https://github.com/writerslogic/c2pa-warc/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/writerslogic/c2pa-warc"><img src="https://api.securityscorecards.dev/projects/github.com/writerslogic/c2pa-warc/badge" alt="OpenSSF Scorecard"></a>
   <a href="#license"><img src="https://img.shields.io/crates/l/c2pa-warc.svg" alt="License"></a>
 </p>
 
