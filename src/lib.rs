@@ -14,6 +14,12 @@ mod reader;
 mod record;
 mod writer;
 
+#[cfg(all(feature = "python", not(target_arch = "wasm32")))]
+mod python;
+
+#[cfg(target_arch = "wasm32")]
+mod wasm;
+
 pub use error::Error;
 pub use reader::{read_manifest, read_records};
 pub use record::{build_record, WarcRecord};
