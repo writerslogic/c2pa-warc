@@ -2,8 +2,11 @@
 name = "c2pa-warc"
 version = "0.2.0"
 edition = "2021"
+# One MSRV across the crate family; verified with `cargo +1.87 check`.
+rust-version = "1.87"
 description = "C2PA manifest embedding for WARC web archive files (ISO 28500)"
 license = "MIT OR Apache-2.0"
+readme = "README.md"
 repository = "https://github.com/writerslogic/c2pa-warc"
 keywords = ["c2pa", "provenance", "warc", "web-archive"]
 categories = ["encoding", "parser-implementations"]
