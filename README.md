@@ -12,6 +12,8 @@ Stores and retrieves C2PA Manifest Stores in [WARC 1.1](https://iipc.github.io/w
 
 WARC is used by national libraries, legal deposit systems, and digital preservation institutions to archive web content. This crate enables content provenance for archived web resources.
 
+> **The C2PA Technical Specification defines no WARC embedding method.** Unlike HTML, structured text, ZIP, ONNX, or SafeTensors — each of which has a normative clause — WARC embedding is a proposal, and what this crate implements is that proposed shape. It conforms to [WARC 1.1](https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.1/) and produces a valid archive readable by any WARC tool; it does not claim C2PA specification conformance, because there is nothing yet to conform to.
+
 Zero dependencies.
 
 ## Quick Start
