@@ -1,11 +1,15 @@
 use std::fmt;
 
+/// Errors from reading or writing a WARC archive.
+///
+/// None carries a C2PA validation status code — see [`Error::code`].
 #[derive(Debug)]
 pub enum Error {
     /// No C2PA manifest record was present in the archive.
     NotFound,
     /// A WARC record was structurally malformed.
     InvalidRecord(String),
+    /// An underlying I/O failure.
     Io(std::io::Error),
 }
 

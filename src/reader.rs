@@ -1,6 +1,7 @@
 use crate::error::Error;
 use crate::record::{parse_records, WarcRecord};
 
+/// Read the embedded C2PA Manifest Store, taking the last manifest record.
 pub fn read_manifest(data: &[u8]) -> Result<Vec<u8>, Error> {
     let records = parse_records(data)?;
     let manifest = records
@@ -11,6 +12,7 @@ pub fn read_manifest(data: &[u8]) -> Result<Vec<u8>, Error> {
     Ok(manifest.body.clone())
 }
 
+/// Parse every record in the archive, in file order.
 pub fn read_records(data: &[u8]) -> Result<Vec<WarcRecord>, Error> {
     parse_records(data)
 }

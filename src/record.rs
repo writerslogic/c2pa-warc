@@ -6,32 +6,43 @@ const VERSION: &str = "WARC/1.1";
 const C2PA_CONTENT_TYPE: &str = "application/c2pa";
 const C2PA_WARC_TYPE: &str = "c2paprovenance";
 
+/// A parsed WARC record: its headers, its body, and where it sits in the file.
 #[derive(Debug, Clone)]
 pub struct WarcRecord {
+    /// Record headers, with names lowercased for case-insensitive lookup.
     pub headers: HashMap<String, String>,
+    /// The record body, exactly as stored.
     pub body: Vec<u8>,
+    /// Byte offset of the record within the archive.
     pub raw_offset: usize,
+    /// Byte length of the whole record, headers included.
     pub raw_length: usize,
 }
 
 impl WarcRecord {
+    /// The `WARC-Type` header, if present.
     pub fn warc_type(&self) -> Option<&str> {
         self.headers.get("warc-type").map(|s| s.as_str())
     }
 
+    /// The `Content-Type` header, if present.
     pub fn content_type(&self) -> Option<&str> {
         self.headers.get("content-type").map(|s| s.as_str())
     }
 
+    /// The `WARC-Record-ID` header, if present.
     pub fn record_id(&self) -> Option<&str> {
         self.headers.get("warc-record-id").map(|s| s.as_str())
     }
 
+    /// Whether this is the C2PA manifest record: the dedicated WARC type with
+    /// the `application/c2pa` content type.
     pub fn is_c2pa_manifest(&self) -> bool {
         self.warc_type() == Some(C2PA_WARC_TYPE) && self.content_type() == Some(C2PA_CONTENT_TYPE)
     }
 }
 
+/// Parse every record in the archive, in file order.
 pub fn parse_records(data: &[u8]) -> Result<Vec<WarcRecord>, Error> {
     let mut records = Vec::new();
     let mut pos = 0;
@@ -92,8 +103,10 @@ pub fn parse_records(data: &[u8]) -> Result<Vec<WarcRecord>, Error> {
     Ok(records)
 }
 
-// The C2PA manifest record carries no WARC-Target-URI; pass `None` for it. Other
-// record types (response, resource) supply their captured URI via `Some`.
+/// Build a single WARC record from its headers and body.
+///
+/// The C2PA manifest record carries no WARC-Target-URI; pass `None` for it. Other
+/// record types (response, resource) supply their captured URI via `Some`.
 pub fn build_record(
     warc_type: &str,
     content_type: &str,

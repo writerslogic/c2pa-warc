@@ -9,6 +9,8 @@
 //! record in the file. A file carries at most one manifest record; updating
 //! removes the existing one and appends the replacement.
 
+#![forbid(unsafe_code)]
+#![warn(missing_docs)]
 mod error;
 mod reader;
 mod record;

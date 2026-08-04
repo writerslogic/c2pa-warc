@@ -1,9 +1,11 @@
 use crate::error::Error;
 use crate::record::{build_record, parse_records};
 
-// A WARC file carries at most one manifest record, always last. Updating removes
-// any existing manifest record before appending the replacement, so the bytes of
-// every other record are preserved and the file stays conformant.
+/// Append a C2PA Manifest Store to a WARC archive as a new record.
+///
+/// A WARC file carries at most one manifest record, always last. Updating removes
+/// any existing manifest record before appending the replacement, so the bytes of
+/// every other record are preserved and the file stays conformant.
 pub fn append_manifest(
     warc_data: &[u8],
     manifest_bytes: &[u8],
