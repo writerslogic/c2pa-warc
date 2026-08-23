@@ -1,3 +1,7 @@
+# c2pa-warc
+
+_C2PA manifest embedding for WARC web archive files (ISO 28500)._
+
 <p align="center">
   <a href="https://crates.io/crates/c2pa-warc"><img src="https://img.shields.io/crates/v/c2pa-warc.svg" alt="crates.io"></a>
   <a href="https://docs.rs/c2pa-warc"><img src="https://docs.rs/c2pa-warc/badge.svg" alt="docs.rs"></a>
@@ -12,6 +16,7 @@ Stores and retrieves C2PA Manifest Stores in [WARC 1.1](https://iipc.github.io/w
 
 WARC is used by national libraries, legal deposit systems, and digital preservation institutions to archive web content. This crate enables content provenance for archived web resources.
 
+> [!IMPORTANT]
 > **The C2PA Technical Specification defines no WARC embedding method.** Unlike HTML, structured text, ZIP, ONNX, or SafeTensors — each of which has a normative clause — WARC embedding is a proposal, and what this crate implements is that proposed shape. It conforms to [WARC 1.1](https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.1/) and produces a valid archive readable by any WARC tool; it does not claim C2PA specification conformance, because there is nothing yet to conform to.
 
 Zero dependencies.
@@ -20,7 +25,14 @@ Zero dependencies.
 
 ```toml
 [dependencies]
-c2pa-warc = "0.1"
+c2pa-warc = "0.2"
+```
+
+The same crate is published for JavaScript/WebAssembly and Python, built from this source:
+
+```bash
+npm install c2pa-warc   # wasm-bindgen build
+pip install c2pa-warc   # PyO3 abi3 wheel, CPython 3.9+
 ```
 
 ### Append a manifest
