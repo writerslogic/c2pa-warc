@@ -2,7 +2,7 @@
 // community review at iipc/warc-specifications#120.
 //
 // The file contains a warcinfo record, one captured `response` record, and a
-// trailing `c2paprovenance` record whose block is a real C2PA Manifest Store
+// trailing `c2pa-provenance` record whose block is a real C2PA Manifest Store
 // (JUMBF). Run with `cargo run --example make_sample_warc`; it writes
 // `examples/sample.warc` and the extracted `examples/sample.manifest.c2pa`.
 

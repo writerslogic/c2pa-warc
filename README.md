@@ -12,7 +12,7 @@ _C2PA manifest embedding for WARC web archive files (ISO 28500)._
 
 ## Overview
 
-Stores and retrieves C2PA Manifest Stores in [WARC 1.1](https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.1/) files (ISO 28500). The manifest is stored as a WARC record of a dedicated `c2paprovenance` type with `Content-Type: application/c2pa`, as the last record in the file.
+Stores and retrieves C2PA Manifest Stores in [WARC 1.1](https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.1/) files (ISO 28500). The manifest is stored as a WARC record of a dedicated `c2pa-provenance` type with `Content-Type: application/c2pa`, as the last record in the file.
 
 WARC is used by national libraries, legal deposit systems, and digital preservation institutions to archive web content. This crate enables content provenance for archived web resources.
 
@@ -59,11 +59,11 @@ A WARC file carries at most one manifest record, always last. An update removes 
 
 ## Example
 
-`cargo run --example make_sample_warc` writes a minimal WARC (`examples/sample.warc`) containing a `warcinfo` record, one captured `response` record, and a trailing `c2paprovenance` record whose block is a real C2PA Manifest Store, then extracts it back to `examples/sample.manifest.c2pa`. The manifest record header:
+`cargo run --example make_sample_warc` writes a minimal WARC (`examples/sample.warc`) containing a `warcinfo` record, one captured `response` record, and a trailing `c2pa-provenance` record whose block is a real C2PA Manifest Store, then extracts it back to `examples/sample.manifest.c2pa`. The manifest record header:
 
 ```
 WARC/1.1
-WARC-Type: c2paprovenance
+WARC-Type: c2pa-provenance
 WARC-Record-ID: <urn:uuid:...>
 WARC-Date: ...
 Content-Type: application/c2pa
@@ -72,9 +72,9 @@ Content-Length: 3576
 
 ## Design
 
-- Manifest stored as a WARC record of a dedicated `c2paprovenance` type, as the last record in the file; it carries no `WARC-Target-URI`
+- Manifest stored as a WARC record of a dedicated `c2pa-provenance` type, as the last record in the file; it carries no `WARC-Target-URI`
 - At most one manifest record; an update removes the existing one and appends the replacement
-- Manifest records are identified by `WARC-Type: c2paprovenance` together with `Content-Type: application/c2pa`
+- Manifest records are identified by `WARC-Type: c2pa-provenance` together with `Content-Type: application/c2pa`
 
 ## Scope
 

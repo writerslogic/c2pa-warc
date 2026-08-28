@@ -5,7 +5,7 @@
 //! C2PA manifest embedding for WARC web archive files (ISO 28500).
 //!
 //! Stores the C2PA Manifest Store as a WARC record of a dedicated
-//! `c2paprovenance` type with `Content-Type: application/c2pa`, as the last
+//! `c2pa-provenance` type with `Content-Type: application/c2pa`, as the last
 //! record in the file. A file carries at most one manifest record; updating
 //! removes the existing one and appends the replacement.
 

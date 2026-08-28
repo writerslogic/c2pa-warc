@@ -22,7 +22,7 @@ pub fn append_manifest(
         out.extend_from_slice(&warc_data[r.raw_offset..r.raw_offset + r.raw_length]);
     }
     let record = build_record(
-        "c2paprovenance",
+        "c2pa-provenance",
         "application/c2pa",
         record_id,
         None,
