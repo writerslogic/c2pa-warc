@@ -4,7 +4,7 @@ use crate::error::Error;
 
 const VERSION: &str = "WARC/1.1";
 const C2PA_CONTENT_TYPE: &str = "application/c2pa";
-const C2PA_WARC_TYPE: &str = "c2paprovenance";
+const C2PA_WARC_TYPE: &str = "c2pa-provenance";
 
 /// A parsed WARC record: its headers, its body, and where it sits in the file.
 #[derive(Debug, Clone)]
@@ -189,7 +189,7 @@ mod tests {
     fn parse_c2pa_record() {
         let manifest = b"\x00\x01\x02\x03";
         let record = build_record(
-            "c2paprovenance",
+            "c2pa-provenance",
             "application/c2pa",
             "urn:uuid:test-id",
             None,
