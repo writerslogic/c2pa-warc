@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::record::{build_record, parse_records};
+use crate::record::{build_record_with_version, parse_records};
 
 /// Append a C2PA Manifest Store to a WARC archive as a new record.
 ///
@@ -22,11 +22,20 @@ pub fn append_manifest(
         return Err(Error::InvalidRecord("empty WARC data".into()));
     }
     // Validates the archive parses before trusting its length as a starting
-    // offset; the records themselves are never rewritten.
-    let _ = parse_records(warc_data)?;
+    // offset; the records themselves are never rewritten. The appended
+    // manifest record declares the same WARC version as the archive's first
+    // record (WARC/1.0 or WARC/1.1), so a legal-deposit archive captured
+    // under the older version doesn't end up with a mismatched version line
+    // on its newest record.
+    let records = parse_records(warc_data)?;
+    let version = records
+        .first()
+        .map(|r| r.version.as_str())
+        .unwrap_or(crate::record::VERSION);
     let mut out = Vec::with_capacity(warc_data.len() + manifest_bytes.len());
     out.extend_from_slice(warc_data);
-    let record = build_record(
+    let record = build_record_with_version(
+        version,
         "c2pa-provenance",
         "application/c2pa",
         record_id,
@@ -42,6 +51,30 @@ mod tests {
     use super::*;
     use crate::reader::read_manifest;
     use crate::record::build_record;
+
+    /// Appending to an archive captured under WARC/1.0 (ISO 28500:2009, the
+    /// version still used by many legal-deposit and national-library
+    /// collections) must not silently upgrade the file to WARC/1.1 on its
+    /// newest record.
+    #[test]
+    fn appending_to_a_warc_1_0_archive_matches_its_version() {
+        let r1 = crate::record::build_record_with_version(
+            "WARC/1.0",
+            "response",
+            "text/html",
+            "urn:uuid:aaa",
+            Some("https://example.com/"),
+            b"<html></html>",
+        );
+        let warc = append_manifest(&r1, b"\xCA\xFE", "urn:uuid:m1").unwrap();
+        let records = crate::record::parse_records(&warc).unwrap();
+        assert_eq!(records[0].version, "WARC/1.0");
+        assert_eq!(
+            records.last().unwrap().version,
+            "WARC/1.0",
+            "the appended manifest record must match the archive's own version"
+        );
+    }
 
     #[test]
     fn append_and_read_roundtrip() {

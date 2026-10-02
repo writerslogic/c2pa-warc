@@ -55,6 +55,7 @@ fn read_records<'py>(py: Python<'py>, warc: &[u8]) -> PyResult<Bound<'py, PyList
         for (k, v) in &r.headers {
             headers.set_item(k.as_str(), v.as_str())?;
         }
+        d.set_item("version", r.version.as_str())?;
         d.set_item("headers", headers)?;
         d.set_item("body", PyBytes::new(py, &r.body))?;
         d.set_item("offset", r.raw_offset)?;
