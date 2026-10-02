@@ -44,6 +44,7 @@ pub fn read_records(warc: &[u8]) -> Result<Vec<JsValue>, JsError> {
             for (k, v) in &r.headers {
                 let _ = js_sys::Reflect::set(&headers, &k.as_str().into(), &v.as_str().into());
             }
+            let _ = js_sys::Reflect::set(&out, &"version".into(), &r.version.as_str().into());
             let _ = js_sys::Reflect::set(&out, &"headers".into(), &headers);
             let _ = js_sys::Reflect::set(
                 &out,

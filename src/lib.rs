@@ -24,5 +24,5 @@ mod wasm;
 
 pub use error::Error;
 pub use reader::{read_manifest, read_records};
-pub use record::{build_record, WarcRecord};
+pub use record::{build_record, build_record_with_version, WarcRecord};
 pub use writer::append_manifest;

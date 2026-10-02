@@ -2,13 +2,16 @@ use std::collections::HashMap;
 
 use crate::error::Error;
 
-const VERSION: &str = "WARC/1.1";
+pub(crate) const VERSION: &str = "WARC/1.1";
+const SUPPORTED_VERSIONS: [&str; 2] = ["WARC/1.1", "WARC/1.0"];
 const C2PA_CONTENT_TYPE: &str = "application/c2pa";
 const C2PA_WARC_TYPE: &str = "c2pa-provenance";
 
 /// A parsed WARC record: its headers, its body, and where it sits in the file.
 #[derive(Debug, Clone)]
 pub struct WarcRecord {
+    /// The record's declared version line, e.g. `WARC/1.1` or `WARC/1.0`.
+    pub version: String,
     /// Record headers, with names lowercased for case-insensitive lookup.
     pub headers: HashMap<String, String>,
     /// The record body, exactly as stored.
@@ -57,11 +60,13 @@ pub fn parse_records(data: &[u8]) -> Result<Vec<WarcRecord>, Error> {
 
         let record_start = pos;
 
-        if !data[pos..].starts_with(VERSION.as_bytes()) {
-            return Err(Error::InvalidRecord(format!(
-                "expected WARC/1.1 at offset {pos}"
-            )));
-        }
+        let version = SUPPORTED_VERSIONS
+            .iter()
+            .find(|v| data[pos..].starts_with(v.as_bytes()))
+            .ok_or_else(|| {
+                Error::InvalidRecord(format!("expected WARC/1.0 or WARC/1.1 at offset {pos}"))
+            })?
+            .to_string();
 
         let header_end = find_double_crlf(&data[pos..])
             .ok_or_else(|| Error::InvalidRecord("unterminated header".into()))?;
@@ -100,6 +105,7 @@ pub fn parse_records(data: &[u8]) -> Result<Vec<WarcRecord>, Error> {
         let raw_length = pos - record_start;
 
         records.push(WarcRecord {
+            version,
             headers,
             body,
             raw_offset: record_start,
@@ -114,7 +120,37 @@ pub fn parse_records(data: &[u8]) -> Result<Vec<WarcRecord>, Error> {
 ///
 /// The C2PA manifest record carries no WARC-Target-URI; pass `None` for it. Other
 /// record types (response, resource) supply their captured URI via `Some`.
+///
+/// Always writes a `WARC/1.1` version line. To match the version of an
+/// existing archive instead (e.g. appending to a `WARC/1.0` legal-deposit
+/// archive), use [`build_record_with_version`].
 pub fn build_record(
+    warc_type: &str,
+    content_type: &str,
+    record_id: &str,
+    target_uri: Option<&str>,
+    body: &[u8],
+) -> Vec<u8> {
+    build_record_with_version(
+        VERSION,
+        warc_type,
+        content_type,
+        record_id,
+        target_uri,
+        body,
+    )
+}
+
+/// Build a single WARC record, declaring the given version line instead of
+/// always writing `WARC/1.1`.
+///
+/// `version` must be `"WARC/1.0"` or `"WARC/1.1"` — the two versions this
+/// crate can parse back. WARC/1.0 (ISO 28500:2009) and WARC/1.1 share the
+/// same record framing; no field this crate reads or writes differs between
+/// them, so matching the host archive's declared version is purely about
+/// honesty in that line, not a behavior change.
+pub fn build_record_with_version(
+    version: &str,
     warc_type: &str,
     content_type: &str,
     record_id: &str,
@@ -147,7 +183,7 @@ pub fn build_record(
         None => String::new(),
     };
     let header = format!(
-        "{VERSION}\r\nWARC-Type: {warc_type}\r\nWARC-Record-ID: <{record_id}>\r\n{target_line}WARC-Date: {date}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\n\r\n",
+        "{version}\r\nWARC-Type: {warc_type}\r\nWARC-Record-ID: <{record_id}>\r\n{target_line}WARC-Date: {date}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\n\r\n",
         body.len()
     );
     let mut out = header.into_bytes();
@@ -210,6 +246,41 @@ mod tests {
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].body, b"hello");
         assert_eq!(records[0].warc_type(), Some("resource"));
+        assert_eq!(records[0].version, "WARC/1.1");
+    }
+
+    /// Legal-deposit and national-library archives captured before the
+    /// WARC/1.1 revision (2017) are still WARC/1.0 (ISO 28500:2009); this
+    /// crate must read them, not just records it wrote itself.
+    #[test]
+    fn parses_a_warc_1_0_record() {
+        let raw = b"WARC/1.0\r\nWARC-Type: resource\r\nWARC-Record-ID: <urn:uuid:abc>\r\nContent-Type: text/plain\r\nContent-Length: 5\r\n\r\nhello\r\n\r\n";
+        let records = parse_records(raw).unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].body, b"hello");
+        assert_eq!(records[0].version, "WARC/1.0");
+    }
+
+    #[test]
+    fn rejects_an_unknown_version() {
+        let raw = b"WARC/2.0\r\nWARC-Type: resource\r\nWARC-Record-ID: <urn:uuid:abc>\r\nContent-Type: text/plain\r\nContent-Length: 5\r\n\r\nhello\r\n\r\n";
+        assert!(parse_records(raw).is_err());
+    }
+
+    /// `build_record_with_version` must round-trip to the version it was
+    /// asked to declare, not the crate's default.
+    #[test]
+    fn build_record_with_version_round_trips() {
+        let record = build_record_with_version(
+            "WARC/1.0",
+            "resource",
+            "text/plain",
+            "urn:uuid:v10",
+            None,
+            b"body",
+        );
+        let records = parse_records(&record).unwrap();
+        assert_eq!(records[0].version, "WARC/1.0");
     }
 
     /// An attacker-controlled Content-Length near usize::MAX must error
