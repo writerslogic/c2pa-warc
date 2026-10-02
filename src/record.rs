@@ -76,12 +76,19 @@ pub fn parse_records(data: &[u8]) -> Result<Vec<WarcRecord>, Error> {
             .parse()
             .map_err(|_| Error::InvalidRecord("invalid Content-Length".into()))?;
 
-        if pos + content_length > data.len() {
+        // Content-Length is attacker-controlled; a value like usize::MAX makes
+        // `pos + content_length` overflow rather than legitimately exceed
+        // data.len(), which panics on overflow-checked builds instead of
+        // reaching the bounds error below.
+        let end = pos
+            .checked_add(content_length)
+            .ok_or_else(|| Error::InvalidRecord("Content-Length overflows".into()))?;
+        if end > data.len() {
             return Err(Error::InvalidRecord("body extends past end of data".into()));
         }
 
-        let body = data[pos..pos + content_length].to_vec();
-        pos += content_length;
+        let body = data[pos..end].to_vec();
+        pos = end;
 
         // Skip record terminator \r\n\r\n
         if data[pos..].starts_with(b"\r\n\r\n") {
@@ -183,6 +190,15 @@ mod tests {
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].body, b"hello");
         assert_eq!(records[0].warc_type(), Some("resource"));
+    }
+
+    /// An attacker-controlled Content-Length near usize::MAX must error
+    /// cleanly, not overflow the `pos + content_length` bounds check and
+    /// panic on an overflow-checked build.
+    #[test]
+    fn huge_content_length_errors_instead_of_overflowing() {
+        let raw = b"WARC/1.1\r\nWARC-Type: resource\r\nWARC-Record-ID: <urn:uuid:abc>\r\nContent-Type: text/plain\r\nContent-Length: 18446744073709551615\r\n\r\nhello\r\n\r\n";
+        assert!(parse_records(raw).is_err());
     }
 
     #[test]
