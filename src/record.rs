@@ -121,6 +121,26 @@ pub fn build_record(
     target_uri: Option<&str>,
     body: &[u8],
 ) -> Vec<u8> {
+    // Each of these is interpolated directly into a WARC header block. Unlike
+    // `body`, which is length-prefixed and never scanned for structure, a CR
+    // or LF inside any of these four values would start a new header line --
+    // and warc_type/content_type are exactly what is_c2pa_manifest() trusts
+    // to identify the manifest record, so a caller passing through
+    // attacker-influenced data (a crawled page's own URL as target_uri, say)
+    // could forge an extra WARC-Type/Content-Type pair. Strip CR/LF rather
+    // than reject, since this function has no Result to report through.
+    fn strip_crlf(s: &str) -> std::borrow::Cow<'_, str> {
+        if s.contains(['\r', '\n']) {
+            std::borrow::Cow::Owned(s.chars().filter(|c| *c != '\r' && *c != '\n').collect())
+        } else {
+            std::borrow::Cow::Borrowed(s)
+        }
+    }
+    let warc_type = strip_crlf(warc_type);
+    let content_type = strip_crlf(content_type);
+    let record_id = strip_crlf(record_id);
+    let target_uri = target_uri.map(strip_crlf);
+
     let date = warc_date_now();
     let target_line = match target_uri {
         Some(uri) => format!("WARC-Target-URI: {uri}\r\n"),
@@ -199,6 +219,28 @@ mod tests {
     fn huge_content_length_errors_instead_of_overflowing() {
         let raw = b"WARC/1.1\r\nWARC-Type: resource\r\nWARC-Record-ID: <urn:uuid:abc>\r\nContent-Type: text/plain\r\nContent-Length: 18446744073709551615\r\n\r\nhello\r\n\r\n";
         assert!(parse_records(raw).is_err());
+    }
+
+    /// A CR/LF in an untrusted field (e.g. a crawled page's own URL passed as
+    /// target_uri) must not inject an extra WARC header line -- in
+    /// particular, must not forge a competing WARC-Type/Content-Type pair
+    /// that is_c2pa_manifest() would misidentify.
+    #[test]
+    fn crlf_in_untrusted_fields_cannot_inject_a_header() {
+        let record = build_record(
+            "resource",
+            "text/plain",
+            "urn:uuid:test",
+            Some("https://a.example/\r\nWARC-Type: c2pa-provenance\r\nContent-Type: application/c2pa"),
+            b"body",
+        );
+        let records = parse_records(&record).unwrap();
+        assert_eq!(records.len(), 1, "a second record was injected");
+        assert!(!records[0].is_c2pa_manifest());
+        assert_eq!(
+            records[0].headers.get("warc-type").map(String::as_str),
+            Some("resource")
+        );
     }
 
     #[test]

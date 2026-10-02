@@ -3,9 +3,16 @@ use crate::record::{build_record, parse_records};
 
 /// Append a C2PA Manifest Store to a WARC archive as a new record.
 ///
-/// A WARC file carries at most one manifest record, always last. Updating removes
-/// any existing manifest record before appending the replacement, so the bytes of
-/// every other record are preserved and the file stays conformant.
+/// This is append-only: no existing record, manifest or otherwise, is removed
+/// or rewritten. WARC's archival/forensic invariant is that previously
+/// written bytes are never deleted or shifted -- doing so retroactively
+/// invalidates any external CDX/index built against prior byte offsets, and
+/// conflicts with the established C2PA pattern (used for e.g. PDF incremental
+/// updates) of appending new content and letting "the last one wins" govern
+/// discovery, rather than discarding earlier content. If the archive already
+/// carries one or more manifest records, they remain; [`crate::read_manifest`]
+/// resolves which one is active by taking the last, positionally, exactly as
+/// this function places the newest one.
 pub fn append_manifest(
     warc_data: &[u8],
     manifest_bytes: &[u8],
@@ -14,13 +21,11 @@ pub fn append_manifest(
     if warc_data.is_empty() {
         return Err(Error::InvalidRecord("empty WARC data".into()));
     }
+    // Validates the archive parses before trusting its length as a starting
+    // offset; the records themselves are never rewritten.
+    let _ = parse_records(warc_data)?;
     let mut out = Vec::with_capacity(warc_data.len() + manifest_bytes.len());
-    for r in parse_records(warc_data)? {
-        if r.is_c2pa_manifest() {
-            continue;
-        }
-        out.extend_from_slice(&warc_data[r.raw_offset..r.raw_offset + r.raw_length]);
-    }
+    out.extend_from_slice(warc_data);
     let record = build_record(
         "c2pa-provenance",
         "application/c2pa",
@@ -75,7 +80,7 @@ mod tests {
     }
 
     #[test]
-    fn append_replaces_active() {
+    fn appending_a_new_manifest_keeps_the_old_one_and_activates_the_new_one() {
         let r1 = build_record(
             "response",
             "text/html",
@@ -91,12 +96,13 @@ mod tests {
         let extracted = read_manifest(&warc).unwrap();
         assert_eq!(extracted, b"new");
 
-        // Exactly one manifest record survives the update.
-        let manifests = crate::record::parse_records(&warc)
-            .unwrap()
-            .into_iter()
-            .filter(|r| r.is_c2pa_manifest())
-            .count();
-        assert_eq!(manifests, 1);
+        // Append-only: the original record and the superseded manifest
+        // record both survive, byte-for-byte, at their original offsets.
+        let records = crate::record::parse_records(&warc).unwrap();
+        let manifests: Vec<_> = records.iter().filter(|r| r.is_c2pa_manifest()).collect();
+        assert_eq!(manifests.len(), 2, "no record was deleted");
+        assert_eq!(manifests[0].body, old_manifest);
+        assert_eq!(manifests[1].body, new_manifest);
+        assert_eq!(records[0].raw_offset, 0, "r1's offset did not shift");
     }
 }
