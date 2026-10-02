@@ -3,16 +3,21 @@ use crate::record::{parse_records, WarcRecord};
 
 /// Read the archive's single embedded C2PA Manifest Store.
 ///
-/// An archive containing more than one manifest record is treated as if no
-/// manifest were located, as required by the WARC embedding annex.
+/// The C2PA Technical Specification defines no WARC embedding method (see the
+/// crate README); this is this crate's own convention, not a cited
+/// requirement. [`crate::append_manifest`] is append-only and never removes an
+/// earlier manifest record, so an archive may legitimately carry more than
+/// one: the one that is positionally *last* in the file is active, the same
+/// "last one wins" rule the C2PA spec applies elsewhere (e.g. the last C2PA
+/// Manifest superbox in a BMFF asset).
 pub fn read_manifest(data: &[u8]) -> Result<Vec<u8>, Error> {
     let records = parse_records(data)?;
-    let mut manifests = records.iter().filter(|r| r.is_c2pa_manifest());
-    let manifest = manifests.next().ok_or(Error::NotFound)?;
-    if manifests.next().is_some() {
-        return Err(Error::NotFound);
-    }
-    Ok(manifest.body.clone())
+    records
+        .iter()
+        .rev()
+        .find(|r| r.is_c2pa_manifest())
+        .map(|r| r.body.clone())
+        .ok_or(Error::NotFound)
 }
 
 /// Parse every record in the archive, in file order.
@@ -51,7 +56,11 @@ mod tests {
     }
 
     #[test]
-    fn multiple_manifests_are_treated_as_not_located() {
+    fn the_last_manifest_record_wins() {
+        // append_manifest is append-only and never removes an earlier
+        // manifest record, so more than one may legitimately be present; the
+        // positionally last one is active, matching the C2PA "last one wins"
+        // pattern used elsewhere in the spec.
         let r1 = build_record(
             "c2pa-provenance",
             "application/c2pa",
@@ -78,7 +87,7 @@ mod tests {
         warc.extend_from_slice(&r2);
         warc.extend_from_slice(&r3);
 
-        assert!(matches!(read_manifest(&warc), Err(Error::NotFound)));
+        assert_eq!(read_manifest(&warc).unwrap(), b"new");
     }
 
     #[test]
