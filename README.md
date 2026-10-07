@@ -1,14 +1,8 @@
-<!-- repo-header:start -->
-<img src="https://github.com/writerslogic.png?size=160" alt="c2pa-warc logo" width="120" align="left">
+### c2pa-warc
 
-<h1>c2pa-warc</h1>
+C2PA manifest embedding for WARC web archive files (ISO 28500).
 
-<p><strong>C2PA manifest embedding for WARC web archive files (ISO 28500)</strong></p>
-
-<br clear="left">
-
-[![CI](https://img.shields.io/github/actions/workflow/status/writerslogic/c2pa-warc/ci.yml?style=flat-square&labelColor=20232a&branch=main&label=CI)](https://github.com/writerslogic/c2pa-warc/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/writerslogic/c2pa-warc?style=flat-square&labelColor=20232a&label=OpenSSF)](https://securityscorecards.dev/viewer/?uri=github.com/writerslogic/c2pa-warc) [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14418/badge)](https://www.bestpractices.dev/projects/14418) [![License](https://img.shields.io/github/license/writerslogic/c2pa-warc?style=flat-square&labelColor=20232a&color=007ec6&label=license)](https://github.com/writerslogic/c2pa-warc/blob/main/LICENSE-APACHE) [![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-Contributor%20Covenant%202.1-6a4c93?style=flat-square&labelColor=20232a)](https://github.com/writerslogic/c2pa-warc/blob/main/CODE_OF_CONDUCT.md) [![C2PA](https://img.shields.io/badge/standard-C2PA%20related-6a4c93?style=flat-square&labelColor=20232a)](https://c2pa.org/) [![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-Sponsor-EA4AAA?style=flat-square&labelColor=20232a)](https://github.com/sponsors/dcondrey) <a href="https://crates.io/crates/c2pa-warc"><img src="https://img.shields.io/crates/v/c2pa-warc.svg?style=flat-square&labelColor=20232a&color=007ec6" alt="crates.io"></a> <a href="https://docs.rs/c2pa-warc"><img src="https://img.shields.io/docsrs/c2pa-warc?style=flat-square&labelColor=20232a&color=007ec6" alt="docs.rs"></a>
-<!-- repo-header:end -->
+[![CI](https://img.shields.io/github/actions/workflow/status/writerslogic/c2pa-warc/ci.yml?branch=main&label=CI)](https://github.com/writerslogic/c2pa-warc/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/writerslogic/c2pa-warc)](https://securityscorecards.dev/viewer/?uri=github.com/writerslogic/c2pa-warc) [![crates.io](https://img.shields.io/crates/v/c2pa-warc.svg)](https://crates.io/crates/c2pa-warc) [![License](https://img.shields.io/crates/l/c2pa-warc.svg)](#license)
 
 ## Overview
 
